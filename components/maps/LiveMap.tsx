@@ -1,0 +1,1 @@
+"use client";import dynamic from "next/dynamic";const MapInner=dynamic(()=>import("./MapInner"),{ssr:false});export function LiveMap(props:{providerName?:string;eta?:string;trackingEnabled?:boolean}){return <MapInner {...props}/>}
