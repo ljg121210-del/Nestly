@@ -1,3 +1,5 @@
+"use client";
+
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase, hasSupabaseEnv } from "@/lib/supabase";
@@ -32,7 +34,10 @@ export default function ProfilePage() {
 
   useEffect(() => {
     async function loadProfile() {
-      if (!hasSupabaseEnv) return;
+      if (!hasSupabaseEnv) {
+        setLoading(false);
+        return;
+      }
 
       const { data } = await supabase.auth.getUser();
 
@@ -68,6 +73,7 @@ export default function ProfilePage() {
 
   async function saveProfile(e: React.FormEvent) {
     e.preventDefault();
+
     setSaving(true);
     setNotice("");
 
@@ -102,13 +108,6 @@ export default function ProfilePage() {
   return (
     <AppShell role={role}>
       <div className="mx-auto max-w-4xl space-y-6 py-6">
-        <div>
-          <h1 className="text-4xl font-black tracking-tight">Profile</h1>
-          <p className="mt-2 text-nestly-muted">
-            Manage your Nestly account details.
-          </p>
-        </div>
-
         <section className="rounded-[2rem] bg-white p-6 shadow-premium md:p-8">
           <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-4">
@@ -117,9 +116,7 @@ export default function ProfilePage() {
               </div>
 
               <div>
-                <h2 className="text-2xl font-black">
-                  {profile.name || "Nestly user"}
-                </h2>
+                <h1 className="text-3xl font-black">Profile</h1>
                 <p className="mt-1 text-sm capitalize text-nestly-muted">
                   {role} account
                 </p>
@@ -144,7 +141,7 @@ export default function ProfilePage() {
               Email
             </p>
             <p className="mt-1 break-all text-sm font-black">
-              {profile.email}
+              {profile.email || "Not added"}
             </p>
           </div>
 
