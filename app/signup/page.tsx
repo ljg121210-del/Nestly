@@ -81,7 +81,7 @@ export default function SignupPage() {
             <h1 className="mt-8 text-3xl font-black">Verify your email</h1>
 
             <p className="mt-4 text-sm leading-6 text-nestly-muted">
-              We’ve sent a confirmation email to:
+              We’ve sent a confirmation link to:
             </p>
 
             <p className="mt-4 rounded-2xl bg-nestly-soft p-4 text-sm font-black">
@@ -89,7 +89,7 @@ export default function SignupPage() {
             </p>
 
             <p className="mt-4 text-sm leading-6 text-nestly-muted">
-              Press the confirmation link in the email, then log in to Nestly.
+              Press the confirmation link, then log in to Nestly.
             </p>
 
             <Link
@@ -117,46 +117,24 @@ export default function SignupPage() {
 
           <h1 className="mt-8 text-3xl font-black">Create account</h1>
 
-          <p className="mt-2 text-sm leading-6 text-nestly-muted">
-            Join Nestly as a customer or trusted local provider.
-          </p>
-
-          <div className="mt-6 w-full">
-            <p className="mb-3 text-sm font-black text-nestly-muted">
-              I am signing up as:
-            </p>
-
-            <div className="grid w-full grid-cols-2 gap-3">
-              <button
-                type="button"
-                onClick={() => setRole("customer")}
-                className={`w-full rounded-2xl px-4 py-4 text-center font-black transition ${
-                  role === "customer"
-                    ? "bg-nestly-ink text-white"
-                    : "bg-nestly-soft text-nestly-ink"
-                }`}
-              >
-                Customer
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setRole("provider")}
-                className={`w-full rounded-2xl px-4 py-4 text-center font-black transition ${
-                  role === "provider"
-                    ? "bg-nestly-ink text-white"
-                    : "bg-nestly-soft text-nestly-ink"
-                }`}
-              >
-                Provider
-              </button>
-            </div>
-          </div>
+          <label className="mt-6 block">
+            <span className="mb-2 block text-sm font-black">Account type</span>
+            <select
+              value={role}
+              onChange={(e) =>
+                setRole(e.target.value as "customer" | "provider")
+              }
+              className="w-full rounded-2xl border border-black/10 bg-nestly-soft p-4 font-black outline-none"
+            >
+              <option value="customer">Customer</option>
+              <option value="provider">Provider</option>
+            </select>
+          </label>
 
           <input
             required
             placeholder="Full name"
-            className="mt-5 w-full rounded-2xl border border-black/10 bg-nestly-soft p-4 outline-none"
+            className="mt-3 w-full rounded-2xl border border-black/10 bg-nestly-soft p-4 outline-none"
             value={form.name}
             onChange={(e) => setForm({ ...form, name: e.target.value })}
           />
