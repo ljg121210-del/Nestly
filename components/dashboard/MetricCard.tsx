@@ -1,2 +1,0 @@
-import { LucideIcon } from "lucide-react";
-export function MetricCard({icon:Icon,label,value,sub}:{icon:LucideIcon;label:string;value:string;sub:string}){return <div className="rounded-[1.7rem] bg-white p-5 shadow-premium"><div className="mb-5 flex h-11 w-11 items-center justify-center rounded-2xl bg-nestly-mint text-nestly-green"><Icon size={20}/></div><p className="text-sm font-semibold text-nestly-muted">{label}</p><h3 className="mt-1 text-3xl font-black">{value}</h3><p className="mt-2 text-xs text-nestly-muted">{sub}</p></div>}

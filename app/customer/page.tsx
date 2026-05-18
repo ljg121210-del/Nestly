@@ -1,2 +1,49 @@
-import { AppShell } from "@/components/AppShell";import { DashboardHeader } from "@/components/dashboard/DashboardHeader";import { JobFeed } from "@/components/dashboard/JobFeed";import { MetricCard } from "@/components/dashboard/MetricCard";import { RequestForm } from "@/components/forms/RequestForm";import { LiveMap } from "@/components/maps/LiveMap";import { CreditCard,MessageSquareQuote,Search,ShieldCheck } from "lucide-react";
-export default function CustomerDashboard(){return <AppShell role="customer"><DashboardHeader eyebrow="Customer dashboard" title="Post, compare and pay securely." subtitle="Create requests, collect provider quotes, compare price/ETA/trust and secure the booking with Stripe-ready payments."/><div className="mb-6 grid gap-4 md:grid-cols-4"><MetricCard icon={MessageSquareQuote} label="Quotes" value="Live" sub="Realtime incoming quotes"/><MetricCard icon={CreditCard} label="Payments" value="Stripe" sub="Checkout ready"/><MetricCard icon={ShieldCheck} label="Trust" value="Verified" sub="Provider checks"/><MetricCard icon={Search} label="Search" value="Providers" sub="Browse workers"/></div><div className="grid gap-5 xl:grid-cols-[1fr_430px]"><section className="space-y-5"><RequestForm compact/><div><h2 className="mb-4 text-2xl font-black">Open marketplace requests</h2><JobFeed/></div></section><aside className="h-[560px] rounded-[2.2rem] bg-white p-3 shadow-premium"><LiveMap providerName="Accepted provider" eta="Awaiting quote" trackingEnabled={false}/></aside></div></AppShell>}
+import { AppShell } from "@/components/AppShell";
+import { RequestForm } from "@/components/forms/RequestForm";
+import { Search, MapPin, CreditCard, ShieldCheck } from "lucide-react";
+
+export default function CustomerDashboard() {
+  return (
+    <AppShell role="customer">
+      <div className="space-y-6">
+        <section className="rounded-[2rem] bg-nestly-ink p-7 text-white shadow-glow md:p-10">
+          <p className="text-sm font-black uppercase tracking-[0.25em] text-nestly-lime">
+            Customer dashboard
+          </p>
+          <h1 className="mt-3 text-4xl font-black tracking-tight md:text-6xl">
+            Request help fast.
+          </h1>
+          <p className="mt-4 max-w-2xl text-white/60">
+            Post a job, match with available providers, pay a 20% deposit,
+            track arrival and confirm completion.
+          </p>
+        </section>
+
+        <section className="grid gap-4 md:grid-cols-4">
+          <div className="rounded-[1.5rem] bg-white p-5 shadow-premium">
+            <Search className="mb-3 text-nestly-green" />
+            <p className="font-black">Post request</p>
+            <p className="mt-1 text-sm text-nestly-muted">Describe the job.</p>
+          </div>
+          <div className="rounded-[1.5rem] bg-white p-5 shadow-premium">
+            <ShieldCheck className="mb-3 text-nestly-green" />
+            <p className="font-black">Provider accepts</p>
+            <p className="mt-1 text-sm text-nestly-muted">Online providers respond.</p>
+          </div>
+          <div className="rounded-[1.5rem] bg-white p-5 shadow-premium">
+            <CreditCard className="mb-3 text-nestly-green" />
+            <p className="font-black">20% deposit</p>
+            <p className="mt-1 text-sm text-nestly-muted">Secure booking.</p>
+          </div>
+          <div className="rounded-[1.5rem] bg-white p-5 shadow-premium">
+            <MapPin className="mb-3 text-nestly-green" />
+            <p className="font-black">Track arrival</p>
+            <p className="mt-1 text-sm text-nestly-muted">See progress.</p>
+          </div>
+        </section>
+
+        <RequestForm />
+      </div>
+    </AppShell>
+  );
+}

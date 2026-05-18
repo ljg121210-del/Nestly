@@ -1,3 +1,247 @@
 "use client";
-import { useState } from "react";import { supabase,hasSupabaseEnv } from "@/lib/supabase";import { serviceCategories } from "@/lib/categories";import { findMatchedProviders } from "@/lib/matching";import { BellRing,Clock3,MapPin,Search,ShieldCheck } from "lucide-react";import { ProviderMatch } from "@/types";
-export function RequestForm({compact=false}:{compact?:boolean}){const[loading,setLoading]=useState(false),[notice,setNotice]=useState(""),[matches,setMatches]=useState<ProviderMatch[]>([]),[latestJobId,setLatestJobId]=useState<string|null>(null);const[form,setForm]=useState({title:"",category:"cleaning",description:"",location:"",latitude:"53.5283",longitude:"-1.1264",urgency:"asap",scheduled_time:""});async function submit(e:React.FormEvent){e.preventDefault();setLoading(true);setNotice("");setMatches([]);if(!hasSupabaseEnv){setNotice("Supabase is not connected yet. Add .env.local keys.");setLoading(false);return}const{data:userData}=await supabase.auth.getUser();const user=userData.user;if(!user){setNotice("Please sign up or log in before creating a real request.");setLoading(false);return}const lat=Number(form.latitude),lng=Number(form.longitude);const matched=await findMatchedProviders({category:form.category,latitude:lat,longitude:lng,asapOnly:form.urgency==="asap"});const{data,error}=await supabase.from("jobs").insert({customer_id:user.id,title:form.title,category:form.category,description:form.description,location:form.location,latitude:lat,longitude:lng,urgency:form.urgency,scheduled_time:form.urgency==="scheduled"?form.scheduled_time:null,status:matched.length>0?"matched":"requested"}).select().single();if(error){setNotice(error.message);setLoading(false);return}setLatestJobId(data.id);setMatches(matched.slice(0,5));setNotice(matched.length>0?`${matched.length} nearby providers matched. They can now send quotes.`:"Request created. It will appear in the provider jobs feed for quotes.");setLoading(false)}return <form onSubmit={submit} className={`rounded-[2rem] bg-white shadow-premium ${compact?"p-5":"p-6 md:p-8"}`}><div className="mb-6"><p className="mb-2 text-sm font-black uppercase tracking-[.22em] text-nestly-green">Post a problem</p><h2 className="text-3xl font-black tracking-tight">Get quotes from trusted providers.</h2><p className="mt-2 text-sm text-nestly-muted">No fixed pricing. Providers quote; you choose and pay securely.</p></div><label className="mb-2 block text-sm font-black">Search service</label><div className="mb-3 flex items-center gap-3 rounded-2xl border border-black/10 bg-nestly-soft px-4"><Search size={18}/><input required value={form.title} onChange={e=>setForm({...form,title:e.target.value})} placeholder="e.g. leaking tap, cleaner, assemble wardrobe" className="w-full bg-transparent py-4 outline-none"/></div><div className="grid gap-3 md:grid-cols-2"><select value={form.category} onChange={e=>setForm({...form,category:e.target.value})} className="rounded-2xl border border-black/10 bg-nestly-soft p-4 font-bold outline-none">{serviceCategories.map(cat=><option key={cat.value} value={cat.value}>{cat.label}</option>)}</select><div className="flex items-center gap-3 rounded-2xl border border-black/10 bg-nestly-soft px-4"><MapPin size={18}/><input required value={form.location} onChange={e=>setForm({...form,location:e.target.value})} placeholder="Postcode or address" className="w-full bg-transparent py-4 outline-none"/></div></div><textarea value={form.description} onChange={e=>setForm({...form,description:e.target.value})} placeholder="Describe the issue. Providers will quote based on this." className="mt-3 min-h-28 w-full rounded-2xl border border-black/10 bg-nestly-soft p-4 outline-none"/><div className="mt-3 grid grid-cols-3 gap-3">{[["asap","ASAP"],["today","Today"],["scheduled","Scheduled"]].map(([value,label])=><button type="button" key={value} onClick={()=>setForm({...form,urgency:value})} className={`rounded-2xl p-4 text-sm font-black uppercase ${form.urgency===value?"bg-nestly-ink text-white":"bg-nestly-soft"}`}>{label}</button>)}</div>{form.urgency==="scheduled"&&<input type="datetime-local" value={form.scheduled_time} onChange={e=>setForm({...form,scheduled_time:e.target.value})} className="mt-3 w-full rounded-2xl border border-black/10 bg-nestly-soft p-4 font-bold"/>}{notice&&<div className="mt-4 rounded-2xl bg-nestly-mint p-4 text-sm font-bold">{notice}</div>}{matches.length>0&&<div className="mt-5 space-y-3"><div className="flex items-center justify-between"><h3 className="text-lg font-black">Providers notified</h3>{latestJobId&&<a href={`/job/${latestJobId}/quotes`} className="text-sm font-black text-nestly-green">View quotes →</a>}</div>{matches.map(provider=><div key={provider.provider_id} className="rounded-2xl border border-black/10 bg-nestly-soft p-4"><p className="font-black">{provider.name}</p><p className="mt-1 text-sm text-nestly-muted">{provider.distance_miles} miles away • ETA {provider.eta_minutes} mins • ★ {provider.rating||"New"}</p></div>)}</div>}<button disabled={loading} className="mt-5 flex w-full items-center justify-center gap-2 rounded-full bg-nestly-ink px-5 py-4 text-sm font-black text-white disabled:opacity-60">{form.urgency==="asap"?<BellRing size={18}/>:<Clock3 size={18}/>} {loading?"Searching...":"Post request and collect quotes"}</button><div className="mt-4 rounded-2xl bg-white p-4 text-xs font-bold text-nestly-muted ring-1 ring-black/5"><ShieldCheck className="mr-1 inline text-nestly-green" size={15}/>Provider phone and GPS unlock only after accepted quote/payment.</div></form>}
+
+import { useState } from "react";
+import { supabase, hasSupabaseEnv } from "@/lib/supabase";
+import { serviceCategories } from "@/lib/categories";
+import { ProviderRadiusMap } from "@/components/maps/ProviderRadiusMap";
+import { MatchedProvider, findAvailableProviders } from "@/lib/matching";
+import { Camera, Send } from "lucide-react";
+
+export function RequestForm() {
+  const [loading, setLoading] = useState(false);
+  const [notice, setNotice] = useState("");
+  const [matches, setMatches] = useState<MatchedProvider[]>([]);
+  const [createdJobId, setCreatedJobId] = useState("");
+  const [photoPreviews, setPhotoPreviews] = useState<string[]>([]);
+
+  const [form, setForm] = useState({
+    title: "",
+    category: "cleaning",
+    description: "",
+    urgency: "asap",
+    location: "",
+    latitude: "53.5228",
+    longitude: "-1.1285",
+    scheduled_time: "",
+  });
+
+  function handlePhotos(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(e.target.files || []);
+    setPhotoPreviews(files.map((file) => URL.createObjectURL(file)));
+  }
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    setLoading(true);
+    setNotice("");
+    setMatches([]);
+
+    if (!hasSupabaseEnv) {
+      setNotice("Supabase is not connected.");
+      setLoading(false);
+      return;
+    }
+
+    const { data: authData } = await supabase.auth.getUser();
+    const user = authData.user;
+
+    if (!user) {
+      setNotice("Please log in before creating a request.");
+      setLoading(false);
+      return;
+    }
+
+    const latitude = Number(form.latitude);
+    const longitude = Number(form.longitude);
+
+    const providers = await findAvailableProviders({
+      category: form.category,
+      latitude,
+      longitude,
+    });
+
+    const { data: job, error } = await supabase
+      .from("jobs")
+      .insert({
+        customer_id: user.id,
+        title: form.title,
+        category: form.category,
+        description: form.description,
+        urgency: form.urgency,
+        location: form.location,
+        latitude,
+        longitude,
+        status: providers.length ? "matched" : "requested",
+        scheduled_time: form.urgency === "scheduled" ? form.scheduled_time : null,
+      })
+      .select()
+      .single();
+
+    if (error) {
+      setNotice(error.message);
+      setLoading(false);
+      return;
+    }
+
+    if (providers.length) {
+      await supabase.from("job_requests").insert(
+        providers.map((provider) => ({
+          job_id: job.id,
+          provider_id: provider.provider_id,
+          status: "pending",
+        }))
+      );
+    }
+
+    setCreatedJobId(job.id);
+    setMatches(providers);
+    setNotice(
+      providers.length
+        ? `${providers.length} online providers matched. They can accept or decline your request.`
+        : "No online providers matched yet. Your job is open in the provider feed."
+    );
+    setLoading(false);
+  }
+
+  return (
+    <div className="grid gap-6 lg:grid-cols-[1fr_.9fr]">
+      <form onSubmit={submit} className="rounded-[2rem] bg-white p-6 shadow-premium md:p-8">
+        <h2 className="text-3xl font-black">Request help</h2>
+        <p className="mt-2 text-sm text-nestly-muted">
+          Describe the problem. Nestly will match you with online providers in range.
+        </p>
+
+        <input
+          required
+          value={form.title}
+          onChange={(e) => setForm({ ...form, title: e.target.value })}
+          placeholder="What do you need help with?"
+          className="mt-6 w-full rounded-2xl border border-black/10 bg-nestly-soft p-4 outline-none"
+        />
+
+        <select
+          value={form.category}
+          onChange={(e) => setForm({ ...form, category: e.target.value })}
+          className="mt-3 w-full rounded-2xl border border-black/10 bg-nestly-soft p-4 font-black outline-none"
+        >
+          {serviceCategories.map((category) => (
+            <option key={category.value} value={category.value}>
+              {category.label}
+            </option>
+          ))}
+        </select>
+
+        <textarea
+          value={form.description}
+          onChange={(e) => setForm({ ...form, description: e.target.value })}
+          placeholder="Add details about the job/problem"
+          className="mt-3 min-h-28 w-full rounded-2xl border border-black/10 bg-nestly-soft p-4 outline-none"
+        />
+
+        <input
+          required
+          value={form.location}
+          onChange={(e) => setForm({ ...form, location: e.target.value })}
+          placeholder="Location / postcode"
+          className="mt-3 w-full rounded-2xl border border-black/10 bg-nestly-soft p-4 outline-none"
+        />
+
+        <div className="mt-3 grid grid-cols-3 gap-2">
+          {[
+            ["asap", "ASAP"],
+            ["today", "Today"],
+            ["scheduled", "Scheduled"],
+          ].map(([value, label]) => (
+            <button
+              key={value}
+              type="button"
+              onClick={() => setForm({ ...form, urgency: value })}
+              className={`rounded-2xl p-3 text-sm font-black ${
+                form.urgency === value ? "bg-nestly-ink text-white" : "bg-nestly-soft"
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
+        {form.urgency === "scheduled" && (
+          <input
+            type="datetime-local"
+            value={form.scheduled_time}
+            onChange={(e) => setForm({ ...form, scheduled_time: e.target.value })}
+            className="mt-3 w-full rounded-2xl border border-black/10 bg-nestly-soft p-4 outline-none"
+          />
+        )}
+
+        <label className="mt-4 flex cursor-pointer items-center justify-center gap-2 rounded-2xl border border-dashed border-black/20 bg-nestly-soft p-5 text-sm font-black">
+          <Camera size={18} />
+          Optional photos of the job/problem
+          <input type="file" accept="image/*" multiple onChange={handlePhotos} className="hidden" />
+        </label>
+
+        {photoPreviews.length > 0 && (
+          <div className="mt-3 grid grid-cols-3 gap-2">
+            {photoPreviews.map((src) => (
+              <img key={src} src={src} alt="Job preview" className="h-24 rounded-2xl object-cover" />
+            ))}
+          </div>
+        )}
+
+        {notice && (
+          <div className="mt-4 rounded-2xl bg-nestly-mint p-4 text-sm font-black">
+            {notice}
+          </div>
+        )}
+
+        <button
+          disabled={loading}
+          className="mt-5 flex w-full items-center justify-center gap-2 rounded-full bg-nestly-ink px-5 py-4 text-sm font-black text-white disabled:opacity-60"
+        >
+          <Send size={18} />
+          {loading ? "Matching providers..." : "Send request"}
+        </button>
+
+        {createdJobId && (
+          <a
+            href={`/job/${createdJobId}`}
+            className="mt-4 block text-center text-sm font-black text-nestly-green"
+          >
+            View job tracking →
+          </a>
+        )}
+      </form>
+
+      <div>
+        <ProviderRadiusMap
+          customerLocation={{
+            lat: Number(form.latitude),
+            lng: Number(form.longitude),
+            label: form.location || "Your job location",
+          }}
+          providers={matches}
+        />
+
+        <div className="mt-4 rounded-[2rem] bg-white p-5 shadow-premium">
+          <h3 className="text-xl font-black">Matched providers</h3>
+          <div className="mt-4 space-y-3">
+            {matches.length === 0 ? (
+              <p className="text-sm text-nestly-muted">
+                Matched online providers will appear here.
+              </p>
+            ) : (
+              matches.map((provider) => (
+                <div key={provider.provider_id} className="rounded-2xl bg-nestly-soft p-4">
+                  <p className="font-black">{provider.name}</p>
+                  <p className="mt-1 text-sm text-nestly-muted">
+                    {provider.distance_miles} miles • ETA {provider.eta_minutes} mins
+                  </p>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

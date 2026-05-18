@@ -1,1 +1,0 @@
-import { AppShell } from "@/components/AppShell";import { ProviderOnboardingForm } from "@/components/forms/ProviderOnboardingForm";export default function ProviderOnboardingPage(){return <AppShell role="provider"><ProviderOnboardingForm/></AppShell>}

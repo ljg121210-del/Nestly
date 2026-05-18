@@ -1,2 +1,152 @@
-"use client";import { useEffect,useState } from "react";import { AppShell } from "@/components/AppShell";import { DashboardHeader } from "@/components/dashboard/DashboardHeader";import { LiveMap } from "@/components/maps/LiveMap";import { supabase,hasSupabaseEnv } from "@/lib/supabase";import { Job } from "@/types";import { Button } from "@/components/ui/Button";import { Lock,MessageCircle,Phone } from "lucide-react";
-export default function JobTrackingPage({params}:{params:{id:string}}){const[job,setJob]=useState<Job|null>(null);async function loadJob(){if(!hasSupabaseEnv)return;const{data}=await supabase.from("jobs").select("*").eq("id",params.id).single();setJob(data as Job)}useEffect(()=>{loadJob();if(!hasSupabaseEnv)return;const channel=supabase.channel(`job-${params.id}`).on("postgres_changes",{event:"*",schema:"public",table:"jobs",filter:`id=eq.${params.id}`},loadJob).subscribe();return()=>{supabase.removeChannel(channel)}},[params.id]);const trackingEnabled=job?.status==="on_the_way"||job?.status==="arrived";const providerName=job?.provider_name||"Provider not selected yet";const providerPhone=job?.provider_phone||"Shown after accepted quote/payment";async function updateStatus(status:string){await fetch(`/api/jobs/${params.id}/status`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({status})});loadJob()}return <AppShell role="customer"><DashboardHeader eyebrow="Job tracking" title={job?.title||"Track your request"} subtitle="Quotes first. Provider details unlock after acceptance/payment. GPS unlocks when provider goes on-the-way."/><div className="grid gap-5 xl:grid-cols-[1fr_420px]"><div className="h-[620px] rounded-[2.3rem] bg-white p-3 shadow-glow"><LiveMap providerName={providerName} eta={trackingEnabled?"12 mins":"Locked"} trackingEnabled={trackingEnabled}/></div><aside className="space-y-5"><div className="rounded-[2rem] bg-white p-6 shadow-premium"><p className="text-sm font-bold text-nestly-muted">Job status</p><h2 className="mt-1 text-3xl font-black capitalize">{job?.status?.replaceAll("_"," ")||"Not live yet"}</h2><p className="mt-3 text-sm text-nestly-muted">{job?.location||"Connect Supabase and create a real job."}</p><Button href={`/job/${params.id}/quotes`} className="mt-5">View quotes</Button></div><div className="rounded-[2rem] bg-white p-6 shadow-premium"><p className="text-sm font-bold text-nestly-muted">Selected provider</p><h3 className="mt-1 text-2xl font-black">{providerName}</h3><p className="mt-2 text-sm font-bold text-nestly-muted">{providerPhone}</p><div className="mt-5 grid grid-cols-2 gap-3"><a href={`/messages?job=${params.id}`} className="rounded-full bg-nestly-ink px-5 py-4 text-center text-sm font-black text-white"><MessageCircle className="mx-auto mb-1"/>Chat</a><a href={job?.provider_phone?`tel:${job.provider_phone}`:"#"} className="rounded-full border border-black/10 px-5 py-4 text-center text-sm font-black"><Phone className="mx-auto mb-1"/>Call</a></div></div><div className="rounded-[2rem] bg-white p-6 shadow-premium"><h3 className="text-xl font-black">Demo status controls</h3><div className="mt-4 grid gap-2"><button onClick={()=>updateStatus("on_the_way")} className="rounded-full bg-nestly-ink px-4 py-3 text-sm font-black text-white">Mark on the way</button><button onClick={()=>updateStatus("arrived")} className="rounded-full bg-white px-4 py-3 text-sm font-black ring-1 ring-black/10">Mark arrived</button><button onClick={()=>updateStatus("completed")} className="rounded-full bg-nestly-green px-4 py-3 text-sm font-black text-white">Complete job</button></div></div>{!trackingEnabled&&<div className="rounded-[2rem] bg-white p-6 shadow-premium"><Lock className="mb-3 text-nestly-green"/><h3 className="text-xl font-black">GPS locked</h3><p className="mt-2 text-sm leading-6 text-nestly-muted">Tracking starts once the accepted provider marks on-the-way.</p></div>}</aside></div></AppShell>}
+"use client";
+
+import { useEffect, useState } from "react";
+import { AppShell } from "@/components/AppShell";
+import { LiveMap } from "@/components/maps/LiveMap";
+import { supabase, hasSupabaseEnv } from "@/lib/supabase";
+import { Camera, CreditCard, ShieldCheck } from "lucide-react";
+
+export default function JobTrackingPage({ params }: { params: { id: string } }) {
+  const [job, setJob] = useState<any>(null);
+  const [notice, setNotice] = useState("");
+  const [completionPhotos, setCompletionPhotos] = useState<string[]>([]);
+
+  async function loadJob() {
+    if (!hasSupabaseEnv) return;
+    const { data } = await supabase.from("jobs").select("*").eq("id", params.id).single();
+    setJob(data);
+  }
+
+  useEffect(() => {
+    loadJob();
+
+    if (!hasSupabaseEnv) return;
+
+    const channel = supabase
+      .channel(`job-${params.id}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "jobs", filter: `id=eq.${params.id}` },
+        loadJob
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [params.id]);
+
+  function handleCompletionPhotos(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(e.target.files || []);
+    setCompletionPhotos(files.map((file) => URL.createObjectURL(file)));
+  }
+
+  async function payDeposit() {
+    const res = await fetch("/api/stripe/create-deposit-session", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ jobId: params.id, estimatedAmountPence: 10000 }),
+    });
+
+    const data = await res.json();
+
+    if (data.url) window.location.href = data.url;
+    else setNotice(data.error || "Stripe deposit is not configured yet.");
+  }
+
+  async function completeJob() {
+    const res = await fetch("/api/jobs/complete", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ jobId: params.id }),
+    });
+
+    const data = await res.json();
+    setNotice(data.error || "Job marked complete. Final payment can now be collected.");
+    loadJob();
+  }
+
+  const trackingEnabled = job?.status === "on_the_way" || job?.status === "arrived";
+
+  return (
+    <AppShell role="customer">
+      <div className="space-y-6">
+        <section className="rounded-[2rem] bg-nestly-ink p-7 text-white shadow-glow">
+          <p className="text-sm font-black uppercase tracking-[0.25em] text-nestly-lime">
+            Job tracking
+          </p>
+          <h1 className="mt-3 text-4xl font-black">
+            {job?.title || "Track your job"}
+          </h1>
+          <p className="mt-3 text-white/60">
+            Deposit, arrival tracking, completion photos and final payment.
+          </p>
+        </section>
+
+        <div className="grid gap-6 lg:grid-cols-[1fr_420px]">
+          <LiveMap
+            providerName={job?.provider_name || "Provider"}
+            eta={trackingEnabled ? "12 mins" : "Tracking locked"}
+            trackingEnabled={trackingEnabled}
+          />
+
+          <aside className="space-y-4">
+            <div className="rounded-[2rem] bg-white p-6 shadow-premium">
+              <h2 className="text-2xl font-black">Status</h2>
+              <p className="mt-2 text-nestly-muted">
+                {job?.status?.replaceAll("_", " ") || "Loading"}
+              </p>
+
+              <button
+                onClick={payDeposit}
+                className="mt-5 flex w-full items-center justify-center gap-2 rounded-full bg-nestly-ink px-5 py-4 text-sm font-black text-white"
+              >
+                <CreditCard size={18} />
+                Pay 20% deposit
+              </button>
+
+              <p className="mt-3 text-xs leading-5 text-nestly-muted">
+                Deposit is designed to be refundable if the provider does not arrive.
+              </p>
+            </div>
+
+            <div className="rounded-[2rem] bg-white p-6 shadow-premium">
+              <h2 className="text-2xl font-black">Completion photos</h2>
+              <p className="mt-2 text-sm text-nestly-muted">
+                Upload photos of the completed job before final payment.
+              </p>
+
+              <label className="mt-4 flex cursor-pointer items-center justify-center gap-2 rounded-2xl border border-dashed border-black/20 bg-nestly-soft p-5 text-sm font-black">
+                <Camera size={18} />
+                Add completion photos
+                <input type="file" accept="image/*" multiple className="hidden" onChange={handleCompletionPhotos} />
+              </label>
+
+              {completionPhotos.length > 0 && (
+                <div className="mt-3 grid grid-cols-3 gap-2">
+                  {completionPhotos.map((src) => (
+                    <img key={src} src={src} alt="Completion" className="h-24 rounded-2xl object-cover" />
+                  ))}
+                </div>
+              )}
+
+              <button
+                onClick={completeJob}
+                className="mt-5 flex w-full items-center justify-center gap-2 rounded-full bg-nestly-green px-5 py-4 text-sm font-black text-white"
+              >
+                <ShieldCheck size={18} />
+                Confirm completed
+              </button>
+            </div>
+
+            {notice && (
+              <div className="rounded-2xl bg-nestly-mint p-4 text-sm font-black">
+                {notice}
+              </div>
+            )}
+          </aside>
+        </div>
+      </div>
+    </AppShell>
+  );
+}

@@ -1,2 +1,0 @@
-import { ReactNode } from "react";
-export function EmptyState({title,body,action}:{title:string;body:string;action?:ReactNode}){return <div className="rounded-[2rem] border border-dashed border-black/10 bg-white p-8 text-center shadow-premium"><div className="mx-auto mb-5 h-14 w-14 rounded-full bg-nestly-mint"/><h3 className="text-2xl font-black">{title}</h3><p className="mx-auto mt-2 max-w-md text-sm leading-6 text-nestly-muted">{body}</p>{action&&<div className="mt-6">{action}</div>}</div>}

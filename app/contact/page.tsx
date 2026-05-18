@@ -1,1 +1,26 @@
-import { RequestForm } from "@/components/forms/RequestForm";import { FloatingNav } from "@/components/landing/FloatingNav";import { photos } from "@/lib/images";export default function ContactPage(){return <main className="min-h-screen bg-nestly-soft pt-28"><FloatingNav/><section className="mx-auto grid max-w-7xl gap-8 px-5 py-10 lg:grid-cols-[.8fr_1.2fr] lg:items-center"><div><p className="mb-3 text-sm font-black uppercase tracking-[.26em] text-nestly-green">Post a problem</p><h1 className="text-5xl font-black tracking-[-0.05em] md:text-7xl">Get trusted quotes fast.</h1><p className="mt-5 text-lg leading-8 text-nestly-muted">Tell Nestly what you need. Providers quote with price range, ETA and message.</p><div className="mt-8 overflow-hidden rounded-[2rem] shadow-premium"><img src={photos.cleaner} alt="Cleaner" className="h-80 w-full object-cover"/></div></div><RequestForm/></section></main>}
+import { RequestForm } from "@/components/forms/RequestForm";
+import { FloatingNav } from "@/components/landing/FloatingNav";
+
+export default function ContactPage() {
+  return (
+    <main className="min-h-screen bg-nestly-soft pt-28">
+      <FloatingNav />
+
+      <section className="mx-auto max-w-7xl px-5 py-10">
+        <div className="mb-8 max-w-3xl">
+          <p className="text-sm font-black uppercase tracking-[0.25em] text-nestly-green">
+            Customer request
+          </p>
+          <h1 className="mt-3 text-5xl font-black tracking-tight">
+            Tell Nestly what you need.
+          </h1>
+          <p className="mt-4 text-nestly-muted">
+            Add job details, optional photos, location and urgency.
+          </p>
+        </div>
+
+        <RequestForm />
+      </section>
+    </main>
+  );
+}
