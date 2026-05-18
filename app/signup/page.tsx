@@ -121,40 +121,16 @@ export default function SignupPage() {
             Join Nestly as a customer or trusted local provider.
           </p>
 
-          <div className="mt-6">
+          <div className="mt-6 w-full">
             <p className="mb-3 text-sm font-black text-nestly-muted">
               I am signing up as:
             </p>
 
             <div className="grid w-full grid-cols-2 gap-3">
-  <button
-    type="button"
-    onClick={() => setRole("customer")}
-    className={`w-full rounded-2xl px-4 py-4 text-center font-black transition ${
-      role === "customer"
-        ? "bg-nestly-ink text-white"
-        : "bg-nestly-soft text-nestly-ink"
-    }`}
-  >
-    Customer
-  </button>
-
-  <button
-    type="button"
-    onClick={() => setRole("provider")}
-    className={`w-full rounded-2xl px-4 py-4 text-center font-black transition ${
-      role === "provider"
-        ? "bg-nestly-ink text-white"
-        : "bg-nestly-soft text-nestly-ink"
-    }`}
-  >
-    Provider
-  </button>
-</div>
               <button
                 type="button"
                 onClick={() => setRole("customer")}
-                className={`rounded-2xl p-4 text-center font-black transition ${
+                className={`w-full rounded-2xl px-4 py-4 text-center font-black transition ${
                   role === "customer"
                     ? "bg-nestly-ink text-white"
                     : "bg-nestly-soft text-nestly-ink"
@@ -166,7 +142,7 @@ export default function SignupPage() {
               <button
                 type="button"
                 onClick={() => setRole("provider")}
-                className={`rounded-2xl p-4 text-center font-black transition ${
+                className={`w-full rounded-2xl px-4 py-4 text-center font-black transition ${
                   role === "provider"
                     ? "bg-nestly-ink text-white"
                     : "bg-nestly-soft text-nestly-ink"
