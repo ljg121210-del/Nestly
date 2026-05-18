@@ -126,7 +126,31 @@ export default function SignupPage() {
               I am signing up as:
             </p>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid w-full grid-cols-2 gap-3">
+  <button
+    type="button"
+    onClick={() => setRole("customer")}
+    className={`w-full rounded-2xl px-4 py-4 text-center font-black transition ${
+      role === "customer"
+        ? "bg-nestly-ink text-white"
+        : "bg-nestly-soft text-nestly-ink"
+    }`}
+  >
+    Customer
+  </button>
+
+  <button
+    type="button"
+    onClick={() => setRole("provider")}
+    className={`w-full rounded-2xl px-4 py-4 text-center font-black transition ${
+      role === "provider"
+        ? "bg-nestly-ink text-white"
+        : "bg-nestly-soft text-nestly-ink"
+    }`}
+  >
+    Provider
+  </button>
+</div>
               <button
                 type="button"
                 onClick={() => setRole("customer")}
