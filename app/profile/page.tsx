@@ -1,10 +1,16 @@
-"use client";
-
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase, hasSupabaseEnv } from "@/lib/supabase";
 import { AppShell } from "@/components/AppShell";
-import { Save, LogOut, User, Mail, Phone, MapPin, ShieldCheck } from "lucide-react";
+import {
+  LogOut,
+  Mail,
+  MapPin,
+  Phone,
+  Save,
+  ShieldCheck,
+  User,
+} from "lucide-react";
 
 type Role = "customer" | "provider" | "admin";
 
@@ -22,7 +28,6 @@ export default function ProfilePage() {
     email: "",
     phone: "",
     location: "",
-    avatar_url: "",
   });
 
   useEffect(() => {
@@ -53,7 +58,6 @@ export default function ProfilePage() {
         email: data.user.email || "",
         phone: userRow?.phone || data.user.user_metadata?.phone || "",
         location: userRow?.location || "",
-        avatar_url: userRow?.avatar_url || "",
       });
 
       setLoading(false);
@@ -73,11 +77,10 @@ export default function ProfilePage() {
       email: profile.email,
       phone: profile.phone,
       location: profile.location,
-      avatar_url: profile.avatar_url,
       role,
     });
 
-    setNotice(error ? error.message : "Profile updated successfully.");
+    setNotice(error ? error.message : "Profile saved successfully.");
     setSaving(false);
   }
 
@@ -89,8 +92,8 @@ export default function ProfilePage() {
   if (loading) {
     return (
       <AppShell role={role}>
-        <div className="mx-auto max-w-5xl py-10">
-          <p className="text-nestly-muted">Loading profile...</p>
+        <div className="mx-auto max-w-4xl py-10">
+          <p className="text-sm text-nestly-muted">Loading profile...</p>
         </div>
       </AppShell>
     );
@@ -98,24 +101,25 @@ export default function ProfilePage() {
 
   return (
     <AppShell role={role}>
-      <div className="mx-auto max-w-5xl space-y-6 py-6">
+      <div className="mx-auto max-w-4xl space-y-6 py-6">
+        <div>
+          <h1 className="text-4xl font-black tracking-tight">Profile</h1>
+          <p className="mt-2 text-nestly-muted">
+            Manage your Nestly account details.
+          </p>
+        </div>
+
         <section className="rounded-[2rem] bg-white p-6 shadow-premium md:p-8">
-          <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
-            <div className="flex items-center gap-5">
-              <div className="grid h-20 w-20 place-items-center overflow-hidden rounded-full bg-nestly-ink text-2xl font-black text-white">
-                {profile.avatar_url ? (
-                  <img
-                    src={profile.avatar_url}
-                    alt={profile.name}
-                    className="h-full w-full object-cover"
-                  />
-                ) : (
-                  profile.name?.slice(0, 2).toUpperCase() || "N"
-                )}
+          <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-4">
+              <div className="grid h-20 w-20 place-items-center rounded-full bg-nestly-ink text-2xl font-black text-white">
+                {profile.name?.slice(0, 2).toUpperCase() || "N"}
               </div>
 
               <div>
-                <h1 className="text-3xl font-black">Profile</h1>
+                <h2 className="text-2xl font-black">
+                  {profile.name || "Nestly user"}
+                </h2>
                 <p className="mt-1 text-sm capitalize text-nestly-muted">
                   {role} account
                 </p>
@@ -133,29 +137,35 @@ export default function ProfilePage() {
           </div>
         </section>
 
-        <section className="grid gap-5 md:grid-cols-4">
-          <div className="rounded-[1.5rem] bg-white p-5 shadow-premium">
-            <User className="mb-3 text-nestly-green" />
-            <p className="text-xs font-bold uppercase text-nestly-muted">Name</p>
-            <p className="mt-1 font-black">{profile.name || "Not added"}</p>
-          </div>
-
+        <section className="grid gap-4 md:grid-cols-3">
           <div className="rounded-[1.5rem] bg-white p-5 shadow-premium">
             <Mail className="mb-3 text-nestly-green" />
-            <p className="text-xs font-bold uppercase text-nestly-muted">Email</p>
-            <p className="mt-1 break-all text-sm font-black">{profile.email}</p>
+            <p className="text-xs font-black uppercase text-nestly-muted">
+              Email
+            </p>
+            <p className="mt-1 break-all text-sm font-black">
+              {profile.email}
+            </p>
           </div>
 
           <div className="rounded-[1.5rem] bg-white p-5 shadow-premium">
             <Phone className="mb-3 text-nestly-green" />
-            <p className="text-xs font-bold uppercase text-nestly-muted">Phone</p>
-            <p className="mt-1 font-black">{profile.phone || "Not added"}</p>
+            <p className="text-xs font-black uppercase text-nestly-muted">
+              Phone
+            </p>
+            <p className="mt-1 font-black">
+              {profile.phone || "Not added"}
+            </p>
           </div>
 
           <div className="rounded-[1.5rem] bg-white p-5 shadow-premium">
             <MapPin className="mb-3 text-nestly-green" />
-            <p className="text-xs font-bold uppercase text-nestly-muted">Location</p>
-            <p className="mt-1 font-black">{profile.location || "Not added"}</p>
+            <p className="text-xs font-black uppercase text-nestly-muted">
+              Location
+            </p>
+            <p className="mt-1 font-black">
+              {profile.location || "Not added"}
+            </p>
           </div>
         </section>
 
@@ -163,14 +173,20 @@ export default function ProfilePage() {
           onSubmit={saveProfile}
           className="rounded-[2rem] bg-white p-6 shadow-premium md:p-8"
         >
-          <div className="mb-6">
-            <h2 className="text-2xl font-black">Account details</h2>
-            <p className="mt-2 text-sm text-nestly-muted">
-              Update your basic profile information.
-            </p>
+          <div className="mb-6 flex items-start gap-3">
+            <div className="grid h-11 w-11 place-items-center rounded-2xl bg-nestly-mint text-nestly-green">
+              <User size={20} />
+            </div>
+
+            <div>
+              <h2 className="text-2xl font-black">Account information</h2>
+              <p className="mt-1 text-sm text-nestly-muted">
+                Update your contact and profile details.
+              </p>
+            </div>
           </div>
 
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="grid gap-4">
             <label>
               <span className="mb-2 block text-sm font-black">Full name</span>
               <input
@@ -215,18 +231,6 @@ export default function ProfilePage() {
                 placeholder="Town or postcode"
               />
             </label>
-
-            <label className="md:col-span-2">
-              <span className="mb-2 block text-sm font-black">Profile image URL</span>
-              <input
-                value={profile.avatar_url}
-                onChange={(e) =>
-                  setProfile({ ...profile, avatar_url: e.target.value })
-                }
-                className="w-full rounded-2xl border border-black/10 bg-nestly-soft p-4 outline-none"
-                placeholder="Paste image URL"
-              />
-            </label>
           </div>
 
           {notice && (
@@ -237,7 +241,7 @@ export default function ProfilePage() {
 
           <button
             disabled={saving}
-            className="mt-6 flex w-full items-center justify-center gap-2 rounded-full bg-nestly-ink px-6 py-4 text-sm font-black text-white disabled:opacity-60 md:w-auto"
+            className="mt-6 flex w-full items-center justify-center gap-2 rounded-full bg-nestly-ink px-6 py-4 text-sm font-black text-white disabled:opacity-60 sm:w-auto"
           >
             <Save size={18} />
             {saving ? "Saving..." : "Save changes"}
@@ -245,16 +249,16 @@ export default function ProfilePage() {
         </form>
 
         <section className="rounded-[2rem] bg-white p-6 shadow-premium md:p-8">
-          <div className="flex items-start gap-4">
-            <div className="grid h-12 w-12 place-items-center rounded-2xl bg-nestly-mint text-nestly-green">
-              <ShieldCheck />
+          <div className="flex gap-4">
+            <div className="grid h-11 w-11 place-items-center rounded-2xl bg-nestly-mint text-nestly-green">
+              <ShieldCheck size={20} />
             </div>
 
             <div>
-              <h2 className="text-2xl font-black">Account security</h2>
-              <p className="mt-2 text-sm leading-6 text-nestly-muted">
-                Your account is protected through Supabase authentication.
-                Email verification and password rules are managed securely.
+              <h2 className="text-2xl font-black">Security</h2>
+              <p className="mt-1 text-sm leading-6 text-nestly-muted">
+                Your account is protected with Supabase authentication and email
+                verification.
               </p>
             </div>
           </div>
